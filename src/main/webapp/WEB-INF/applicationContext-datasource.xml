@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+        http://www.springframework.org/schema/jee http://www.springframework.org/schema/jee/spring-jee-4.0.xsd
+        http://www.springframework.org/schema/tx 
+        http://www.springframework.org/schema/tx/spring-tx-4.0.xsd"          
+       xmlns:jee="http://www.springframework.org/schema/jee" xmlns:tx="http://www.springframework.org/schema/tx">
+
+    <bean id="btmConfig" factory-method="getConfiguration"
+          class="bitronix.tm.TransactionManagerServices">
+        <property name="serverId" value="spring-btm" />
+    </bean>
+
+    <!--  Datasource Configuration Primary -->         
+      
+    <bean id="ds" class="bitronix.tm.resource.jdbc.PoolingDataSource"
+          init-method="init" destroy-method="close" depends-on="btmConfig">
+        <property name="className" value="${dsClassPrimary}"/>
+        <property name="uniqueName" value="${poolName}" />
+        <property name="maxPoolSize" value="${maximumPoolSize}" />
+        <property name="minPoolSize" value="${minimumPoolSize}" />
+        <property name="allowLocalTransactions" value="true" />
+        <property name="testQuery" value="${testQuery}" />
+        <property name="shareTransactionConnections" value="true" />                
+        <property name="driverProperties">
+            <props>
+                <prop key="user">${user}</prop>
+                <prop key="password">${password}</prop>
+                <prop key="url">${url}</prop>
+            </props>
+        </property>
+    </bean>
+    <bean id="sessionFactory" class="org.springframework.orm.hibernate4.LocalSessionFactoryBean" 
+          p:dataSource-ref="ds" p:packagesToScan="${packagemodelscan}" depends-on="ds">
+        <property name="hibernateProperties">
+            <value>
+                hibernate.dialect=org.hibernate.dialect.MySQL5Dialect
+                hibernate.query.substitutions=${subtitutes}
+                hibernate.show_sql=${showsql}
+                hibernate.transaction.jta.platform=org.hibernate.engine.transaction.jta.platform.internal.BitronixJtaPlatform
+                hibernate.transaction.factory_class=org.hibernate.engine.transaction.internal.jta.CMTTransactionFactory
+            </value>
+        </property>
+    </bean>
+    <!--  End Datasource Configuration Primary -->         
+
+
+
+    <!--  Datasource Configuration Secondary --> 
+    <bean id="dsSecondary" class="bitronix.tm.resource.jdbc.PoolingDataSource"
+          init-method="init" destroy-method="close" depends-on="btmConfig">
+        <property name="className" value="${dsClassSecondary}"/>
+        <property name="uniqueName" value="${poolNameSecondary}" />
+        <property name="maxPoolSize" value="${maximumPoolSizeSecondary}" />
+        <property name="minPoolSize" value="${minimumPoolSizeSecondary}" />
+        <property name="allowLocalTransactions" value="true" />
+        <property name="testQuery" value="${testQuerySecondary}" />
+        <property name="shareTransactionConnections" value="true" />        
+        <property name="driverProperties">
+            <props>
+                <prop key="user">${userSecondary}</prop>
+                <prop key="password">${passwordSecondary}</prop>
+                <prop key="url">${urlSecondary}</prop>
+            </props>
+        </property>
+    </bean>
+    <bean id="sessionFactorySecondary" 
+          class="org.springframework.orm.hibernate4.LocalSessionFactoryBean" 
+          p:dataSource-ref="dsSecondary" p:packagesToScan="${packagemodelscanSecondary}" 
+          depends-on="dsSecondary">
+        <property name="hibernateProperties">
+            <value>
+                hibernate.dialect=org.hibernate.dialect.MySQL5Dialect
+                hibernate.query.substitutions=${subtitutesSecodary}
+                hibernate.show_sql=${showsqlSecodary}
+                hibernate.transaction.jta.platform=org.hibernate.engine.transaction.jta.platform.internal.BitronixJtaPlatform
+                hibernate.transaction.factory_class=org.hibernate.engine.transaction.internal.jta.CMTTransactionFactory
+            </value>
+        </property>
+    </bean>  
+    <!--  End Datasource Configuration Secondary --> 
+    
+    <!-- Configure JTA  -->
+    <!-- Bitronix Provider Transaction Manager non java ee container -->
+    <bean id="bitronixTransactionManager" factory-method="getTransactionManager"
+          class="bitronix.tm.TransactionManagerServices" depends-on="btmConfig,ds,dsSecondary"
+          destroy-method="shutdown" />
+
+
+    <bean id="transactionManager"
+          class="org.springframework.transaction.jta.JtaTransactionManager">
+        <property name="transactionManager" ref="bitronixTransactionManager" />
+        <property name="userTransaction" ref="bitronixTransactionManager" />
+    </bean>
+    
+    <tx:annotation-driven/>
+    <!-- End Configure JTA -->
+</beans>

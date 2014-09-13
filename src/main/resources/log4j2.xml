@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration strict="true" status="OFF" Log4jContextSelector="org.apache.logging.log4j.core.async.AsyncLoggerContextSelector" includeLocation="true">
+    <appenders>
+        <Console name="STDOUT" target="SYSTEM_OUT">
+            <PatternLayout pattern="%highlight{&lt;%d&gt;,[%t]>>[%p]%m%throwable%n}"/>
+        </Console>
+    </appenders>
+    <loggers>
+        <!-- SPRING -->
+        <logger name="org.springframework" level="INFO" additivity="false">
+            <appender-ref ref="STDOUT"/>
+        </logger>            
+        <logger name="org.hibernate" level="INFO" additivity="false">
+            <appender-ref ref="STDOUT"/>
+        </logger>            
+        <logger name="bitronix.tm" level="INFO" additivity="false">
+            <appender-ref ref="STDOUT"/>
+        </logger>            
+        
+        <logger name="com.baculsoft.demo" level="INFO" additivity="false">
+            <appender-ref ref="STDOUT"/>
+        </logger>                
+        <root additivity="false" level="ERROR" includeLocation="true">
+            <appender-ref ref="STDOUT"/>
+        </root>                    
+    </loggers>        
+</configuration>
